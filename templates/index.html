@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>نتيجة الثانوية العامة</title>
+    <style>
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            width: 80%;
+            max-width: 1000px;
+            min-width: 300px;
+            text-align: center;
+            overflow-y: auto;
+            max-height: 90vh;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            font-size: 16px;
+        }
+        .notation {
+            margin-bottom: 20px;
+            font-size: 16px;
+            color: #555;
+        }
+        #results {
+            margin-top: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
+        .result {
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin: 10px;
+            background-color: #f9f9f9;
+            width: calc(48% - 20px);
+            box-sizing: border-box;
+        }
+        .result.full-width {
+            width: calc(100% - 20px);
+        }
+        .result.success {
+            border-color: green;
+            background-color: #e6ffe6;
+        }
+        .result.failure {
+            border-color: red;
+            background-color: #ffe6e6;
+        }
+        .pagination {
+            margin-top: 20px;
+            text-align: center;
+            width: 100%;
+        }
+        .pagination button {
+            padding: 10px 20px;
+            margin: 0 5px;
+            font-size: 16px;
+        }
+        #loading {
+            display: none;
+            font-size: 18px;
+            color: #555;
+        }
+        .loader {
+            border: 16px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 16px solid #3498db;
+            width: 60px;
+            height: 60px;
+            animation: spin 2s linear infinite;
+            margin: auto;
+        }
+        .footer {
+            margin-top: 20px;
+            font-size: 14px;
+            color: #555;
+        }
+    </style>
+    <script>
+    let currentPage = 1;
+    let totalPages = 1;
+
+    async function search(page = 1, updateUrl = true) {
+        document.getElementById('loading').style.display = 'block';
+        const query = document.getElementById('query').value;
+        const response = await fetch(`/search?query=${query}&page=${page}`);
+        const data = await response.json();
+        const resultsContainer = document.getElementById('results');
+        document.getElementById('loading').style.display = 'none';
+        
+        if (data.error) {
+            resultsContainer.innerHTML = `<p>${data.error}</p>`;
+        } else if (data.results.length === 0) {
+            resultsContainer.innerHTML = `<p>No results found</p>`;
+        } else {
+            resultsContainer.innerHTML = data.results.map((r, i) => `
+                <div class="result ${data.results.length === 1 ? 'full-width' : ''} ${r['student_case_desc'].includes('ناجح') ? 'success' : 'failure'}">
+                    <p><strong>رقم الجلوس:</strong> ${r['رقم الجلوس']}</p>
+                    <p><strong>الاسم:</strong> ${r['الاسم']}</p>
+                    <p><strong>الدرجة:</strong> ${r['الدرجة']}</p>
+                    <p><strong>النسبة:</strong> ${(r['الدرجة'] / 410 * 100).toFixed(2)}%</p>
+                    <p><strong>حالة النجاح:</strong> ${r['student_case_desc']}</p>
+                </div>
+            `).join('');
+            currentPage = page;
+            totalPages = Math.ceil(data.total_results / 10);
+            if (updateUrl) {
+                const newUrl = `${window.location.pathname}?query=${query}&page=${page}`;
+                history.pushState({ path: newUrl }, '', newUrl);
+            }
+        }
+    }
+
+    function nextPage() {
+        if (currentPage < totalPages) {
+            search(currentPage + 1);
+        } else {
+            search(1); 
+        }
+    }
+
+    function prevPage() {
+        if (currentPage > 1) {
+            search(currentPage - 1);
+        } else {
+            search(totalPages); 
+        }
+    }
+
+    function resetPage() {
+        currentPage = 1;
+        document.getElementById('query').value = '';
+        document.getElementById('results').innerHTML = '';
+        const newUrl = `${window.location.pathname}`;
+        history.pushState({ path: newUrl }, '', newUrl);
+    }
+
+    window.onload = () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const query = urlParams.get('query');
+        const page = urlParams.get('page');
+        if (query) {
+            document.getElementById('query').value = query;
+            search(page ? parseInt(page) : 1, false);
+        }
+    }
+</script>
+
+</head>
+<body>
+    <div class="container">
+        <h1>نتيجة الثانوية العامة</h1>
+        <div class="notation">
+            تقدر تسرش بالاسم بس تكون حافظه سباعي او برقم بطاقة التموين او برقم الجلوس
+        </div>
+        <input type="text" id="query" placeholder="Search...">
+        <button onclick="search()">Search</button>
+        <div id="results"></div>
+        <div class="pagination">
+            <button onclick="prevPage()">Previous</button>
+            <button onclick="nextPage()">Next</button>
+            <button onclick="resetPage()">Home</button>
+        </div>
+        <div id="loading" class="loader"></div>
+        <div class="footer">
+            Developed by <a href="https://github.com/Hossamsaberx" target="_blank">HossamOfficerK</a>
+        </div>
+        
+    </div>
+</body>
+</html>
