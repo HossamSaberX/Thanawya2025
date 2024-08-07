@@ -6,7 +6,6 @@ This web application allows users to search for student results by name or stude
 
 - **Data Conversion**: Convert large XLSX files to SQLite databases for efficient querying.
 - **Database Optimization**: Index common columns in the SQLite database to improve search performance.
-- **Web Development**: Create a dynamic and responsive web interface using HTML, CSS, and JavaScript.
 - **Server-Side Development**: Develop a Flask-based backend to handle search queries and return paginated results.
 - **Caching**: Implement caching with Flask-Caching to enhance performance.
 - **Deployment**: Deploy the application on Vercel for easy access and demonstration.
