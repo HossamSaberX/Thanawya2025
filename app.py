@@ -11,7 +11,6 @@ db1_path = 'data1.db'
 db2_path = 'data2.db'
  ### These two lines are sequential steps after you divide the xlsx into two dbs (For hosting wise) ###
 ##
-split_id = 500000
 
 def query_db(db_path, query, args=(), one=False):
     conn = sqlite3.connect(db_path)
@@ -22,7 +21,7 @@ def query_db(db_path, query, args=(), one=False):
     conn.close()
     return (rv[0] if rv else None) if one else rv
 
-def make_cache_key(*args, **kwargs):
+def make_cache_key():
     query = request.args.get('query')
     page = request.args.get('page', 1)
     key = f'{query}_{page}'
