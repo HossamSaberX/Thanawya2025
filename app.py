@@ -6,7 +6,11 @@ from utils import normalize_arabic
 
 app = Flask(__name__)
 
-cache = Cache(app, config={'CACHE_TYPE': 'simple'})
+# Configure Redis caching
+cache = Cache(app, config={
+    'CACHE_TYPE': 'redis',
+    'CACHE_REDIS_URL': 'redis://localhost:6379/0'
+})
 
 DB_PATH = 'data.db'
 
@@ -33,7 +37,7 @@ def index():
     return render_template('index.html')
 
 @app.route('/search', methods=['GET'])
-@cache.cached(timeout=300, key_prefix=make_cache_key)
+@cache.cached(timeout=86400, key_prefix=make_cache_key)
 def search():
     query = request.args.get('query')
     page = int(request.args.get('page', 1))

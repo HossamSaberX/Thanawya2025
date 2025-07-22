@@ -1,5 +1,6 @@
 Flask
-Flask-Caching
+Flask-Caching[redis]
 pandas
 openpyxl
 gunicorn
+redis
