@@ -136,11 +136,22 @@ button:hover {
 
 #pagination {
     margin-top: 30px;
+    display: flex;
+    gap: 10px;
 }
 
 #load-more {
     display: none; /* Hidden by default */
-    width: 100%;
+    flex-grow: 1;
+}
+
+#reset-button {
+    display: none;
+    background-color: var(--secondary-text);
+}
+
+#reset-button:hover {
+    background-color: #5a6268;
 }
 
 .footer {

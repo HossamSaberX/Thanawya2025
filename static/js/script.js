@@ -22,9 +22,11 @@ async function fetchResults() {
     const resultsContainer = document.getElementById('results');
     const loading = document.getElementById('loading');
     const loadMoreBtn = document.getElementById('load-more');
+    const resetBtn = document.getElementById('reset-button');
 
     loading.style.display = 'block';
     loadMoreBtn.style.display = 'none';
+    resetBtn.style.display = 'none';
 
     const response = await fetch(`/search?query=${currentQuery}&page=${currentPage}`);
     const data = await response.json();
@@ -53,8 +55,12 @@ async function fetchResults() {
         const totalLoaded = currentPage * perPage;
         if (totalResults > totalLoaded) {
             loadMoreBtn.style.display = 'block';
+            resetBtn.style.display = 'inline-block';
         } else {
             loadMoreBtn.style.display = 'none';
+            if (data.results.length > 0) {
+                resetBtn.style.display = 'inline-block';
+            }
         }
     }
 } 
