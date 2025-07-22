@@ -8,12 +8,11 @@ app = Flask(__name__)
 
 cache = Cache(app, config={'CACHE_TYPE': 'simple'})
 
-db1_path = 'data1.db'
-db2_path = 'data2.db'
+DB_PATH = 'data.db'
 
-def query_db(db_path, query, args=(), one=False):
+def query_db(query, args=(), one=False):
     try:
-        conn = sqlite3.connect(db_path)
+        conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
         cur.execute(query, args)
@@ -21,20 +20,20 @@ def query_db(db_path, query, args=(), one=False):
         conn.close()
         return (rv[0] if rv else None) if one else rv
     except sqlite3.OperationalError:
-        return []
+        return None if one else []
 
 def make_cache_key():
     query = request.args.get('query')
     page = request.args.get('page', 1)
-    key = f'{query}_{page}'
-    return hashlib.md5(key.encode()).hexdigest()
+    key_str = f"query={query}&page={page}"
+    return hashlib.md5(key_str.encode()).hexdigest()
 
 @app.route('/')
 def index():
     return render_template('index.html')
 
 @app.route('/search', methods=['GET'])
-@cache.cached(timeout=60, key_prefix=make_cache_key)
+@cache.cached(timeout=300, key_prefix=make_cache_key)
 def search():
     query = request.args.get('query')
     page = int(request.args.get('page', 1))
@@ -43,50 +42,46 @@ def search():
     if not query:
         return jsonify({"error": "No query provided"}), 400
 
-    results1 = []
-    results2 = []
+    offset = (page - 1) * per_page
+    
+    base_select = "SELECT * FROM students"
+    count_select = "SELECT COUNT(*) FROM students"
+    conditions = []
+    args = []
 
     if query.isdigit():
-        results1 = query_db(db1_path, "SELECT * FROM students WHERE CAST([رقم الجلوس] AS TEXT) LIKE ?", [f"%{query}%"])
-        results2 = query_db(db2_path, "SELECT * FROM students WHERE CAST([رقم الجلوس] AS TEXT) LIKE ?", [f"%{query}%"])
+        conditions.append("CAST([رقم الجلوس] AS TEXT) LIKE ?")
+        args.append(f"%{query}%")
     else:
         normalized_query = normalize_arabic(query)
         search_words = normalized_query.split()
-        
-        # Build the query to match all search words
-        conditions = " AND ".join(["normalized_name LIKE ?" for _ in search_words])
-        sql_query = f"SELECT * FROM students WHERE {conditions}"
-        
-        # Create the arguments list with wildcards
-        args = [f"%{word}%" for word in search_words]
-        
-        results1 = query_db(db1_path, sql_query, args)
-        results2 = query_db(db2_path, sql_query, args)
+        conditions.extend(["normalized_name LIKE ?" for _ in search_words])
+        args.extend([f"%{word}%" for word in search_words])
+    
+    where_clause = " WHERE " + " AND ".join(conditions)
+    
+    count_query = count_select + where_clause
+    total_results_row = query_db(count_query, args, one=True)
+    total_results = total_results_row[0] if total_results_row else 0
 
-    combined_results = results1 + results2
+    results_query = f"{base_select}{where_clause} ORDER BY الدرجة DESC LIMIT ? OFFSET ?"
+    paginated_results = query_db(results_query, args + [per_page, offset])
 
-    def to_dict(row):
+    # Format results
+    results_list = []
+    for row in paginated_results:
         row_dict = dict(row)
         total_degree = row_dict.get('الدرجة', 0)
-        
         is_pass = total_degree >= 160
-        
-        return {
+        results_list.append({
             'رقم الجلوس': row_dict.get('رقم الجلوس', 'N/A'),
             'الاسم': row_dict.get('الاسم', 'N/A'),
             'الدرجة': total_degree,
             'student_case_desc': 'ناجح' if is_pass else 'راسب'
-        }
+        })
         
-    combined_results = [to_dict(row) for row in combined_results]
-    
-    combined_results.sort(key=lambda x: x['الدرجة'], reverse=True)
-
-    total_results = len(combined_results)
-    paginated_results = combined_results[(page - 1) * per_page : page * per_page]
-
     return jsonify({
-        "results": paginated_results,
+        "results": results_list,
         "total_results": total_results
     })
 
