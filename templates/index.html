@@ -123,8 +123,7 @@
                     <p><strong>رقم الجلوس:</strong> ${r['رقم الجلوس']}</p>
                     <p><strong>الاسم:</strong> ${r['الاسم']}</p>
                     <p><strong>الدرجة:</strong> ${r['الدرجة']}</p>
-                    <p><strong>النسبة:</strong> ${(r['الدرجة'] / 410 * 100).toFixed(2)}%</p>
-                    <p><strong>حالة النجاح:</strong> ${r['student_case_desc']}</p>
+                    <p><strong>النسبة:</strong> ${(r['الدرجة'] / 320 * 100).toFixed(2)}%</p>
                 </div>
             `).join('');
             currentPage = page;
@@ -174,9 +173,9 @@
 </head>
 <body>
     <div class="container">
-        <h1>نتيجة الثانوية العامة</h1>
+        <h1>نتيجة الثانوية العامة 2025</h1>
         <div class="notation">
-            تقدر تسرش بالاسم بس تكون حافظه سباعي او برقم بطاقة التموين او برقم الجلوس
+            تقدر تسرش بالاسم كامل او برقم الجلوس او باي اسمين للشخص اللي عايز تعرف درجته
         </div>
         <input type="text" id="query" placeholder="Search...">
         <button onclick="search()">Search</button>

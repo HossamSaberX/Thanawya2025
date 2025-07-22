@@ -1,0 +1,5 @@
+venv
+.git
+*.db
+diff.sh
+__pycache__
