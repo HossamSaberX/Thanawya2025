@@ -3,13 +3,15 @@ import sqlite3
 from flask_caching import Cache
 import hashlib
 from utils import normalize_arabic
+import os
 
 app = Flask(__name__)
 
 # Configure Redis caching
+redis_url = os.environ.get('REDIS_URL', 'redis://localhost:6379/0')
 cache = Cache(app, config={
     'CACHE_TYPE': 'redis',
-    'CACHE_REDIS_URL': 'redis://localhost:6379/0'
+    'CACHE_REDIS_URL': redis_url
 })
 
 DB_PATH = 'data.db'
