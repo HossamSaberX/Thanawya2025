@@ -2,7 +2,7 @@ from flask import Flask, request, jsonify, render_template
 import sqlite3
 from flask_caching import Cache
 import hashlib
-from utils import normalize_arabic
+from utils import normalize_arabic, format_student_result
 import os
 
 app = Flask(__name__)
@@ -48,43 +48,41 @@ def search():
     if not query:
         return jsonify({"error": "No query provided"}), 400
 
-    offset = (page - 1) * per_page
-    
-    base_select = "SELECT * FROM students"
-    count_select = "SELECT COUNT(*) FROM students"
-    conditions = []
-    args = []
+    results_list = []
+    total_results = 0
 
     if query.isdigit():
-        conditions.append("CAST([رقم الجلوس] AS TEXT) LIKE ?")
-        args.append(f"%{query}%")
+        sql_query = "SELECT * FROM students WHERE seating_no = ?"
+        result_row = query_db(sql_query, [query], one=True)
+        
+        if result_row:
+            total_results = 1
+            results_list.append(format_student_result(result_row))
     else:
+        offset = (page - 1) * per_page
+        
+        base_select = "SELECT * FROM students"
+        count_select = "SELECT COUNT(*) FROM students"
+        conditions = []
+        args = []
+
         normalized_query = normalize_arabic(query)
         search_words = normalized_query.split()
         conditions.extend(["normalized_name LIKE ?" for _ in search_words])
         args.extend([f"%{word}%" for word in search_words])
-    
-    where_clause = " WHERE " + " AND ".join(conditions)
-    
-    count_query = count_select + where_clause
-    total_results_row = query_db(count_query, args, one=True)
-    total_results = total_results_row[0] if total_results_row else 0
+        
+        where_clause = " WHERE " + " AND ".join(conditions)
+        
+        count_query = count_select + where_clause
+        total_results_row = query_db(count_query, args, one=True)
+        total_results = total_results_row[0] if total_results_row else 0
 
-    results_query = f"{base_select}{where_clause} ORDER BY الدرجة DESC LIMIT ? OFFSET ?"
-    paginated_results = query_db(results_query, args + [per_page, offset])
+        results_query = f"{base_select}{where_clause} ORDER BY degree DESC LIMIT ? OFFSET ?"
+        paginated_results = query_db(results_query, args + [per_page, offset])
 
-    # Format results
-    results_list = []
-    for row in paginated_results:
-        row_dict = dict(row)
-        total_degree = row_dict.get('الدرجة', 0)
-        is_pass = total_degree >= 160
-        results_list.append({
-            'رقم الجلوس': row_dict.get('رقم الجلوس', 'N/A'),
-            'الاسم': row_dict.get('الاسم', 'N/A'),
-            'الدرجة': total_degree,
-            'student_case_desc': 'ناجح' if is_pass else 'راسب'
-        })
+        # Format results
+        for row in paginated_results:
+            results_list.append(format_student_result(row))
         
     return jsonify({
         "results": results_list,
