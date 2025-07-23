@@ -3,3 +3,6 @@ venv
 *.db
 diff.sh
 __pycache__
+
+# Cache directory
+.render-cache
