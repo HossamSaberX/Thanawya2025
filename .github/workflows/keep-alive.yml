@@ -1,0 +1,20 @@
+name: Keep Service Alive
+
+on:
+  schedule:
+    # Runs every 10 minutes
+    - cron: '*/10 * * * *'
+
+jobs:
+  ping-service:
+    runs-on: ubuntu-latest
+    container:
+      image: curlimages/curl:latest
+    steps:
+      - name: Ping the service URL 3 times
+        run: |
+          curl -sS https://thanawya2025.onrender.com/ > /dev/null || true
+          sleep 10
+          curl -sS https://thanawya2025.onrender.com/ > /dev/null || true
+          sleep 10
+          curl -sS https://thanawya2025.onrender.com/ > /dev/null || true 
